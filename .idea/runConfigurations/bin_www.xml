@@ -4,7 +4,9 @@
       <env name="DEBUG" value="my-application" />
     </envs>
     <browser url="http://localhost:3000/" />
+    <RunnerSettings RunnerId="Basic" />
     <RunnerSettings RunnerId="NodeJS.run" />
+    <ConfigurationWrapper RunnerId="Basic" />
     <ConfigurationWrapper RunnerId="NodeJS.run" />
     <method />
   </configuration>
