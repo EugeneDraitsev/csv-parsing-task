@@ -6,8 +6,10 @@
     <browser url="http://localhost:3000/" />
     <RunnerSettings RunnerId="Basic" />
     <RunnerSettings RunnerId="NodeJS.run" />
+    <RunnerSettings RunnerId="debuggableProgram" />
     <ConfigurationWrapper RunnerId="Basic" />
     <ConfigurationWrapper RunnerId="NodeJS.run" />
+    <ConfigurationWrapper RunnerId="debuggableProgram" />
     <method />
   </configuration>
 </component>
