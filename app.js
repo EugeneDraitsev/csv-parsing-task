@@ -7,7 +7,9 @@ var bodyParser = require('body-parser');
 var users = require('./routes/users');
 var uploads = require('./routes/uploads')
 var multer = require('multer');
-
+var Monitor = require('monitor').start();
+var processMonitor = new Monitor({probeClass: 'Process'});
+processMonitor.connect();
 
 var app = express();
 
@@ -22,7 +24,31 @@ app.use(bodyParser.urlencoded());
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
-app.use(multer({dest: "./uploads/"}));
+//app.use(multer(
+//    {
+//        inMemory: true,
+//        dest: "./uploads/",
+//        onFileUploadStart: function (file, req, res) {
+//            console.log(file.fieldname + ' is starting ...')
+//        },
+//        onFileUploadData: function (file, data, req, res) {
+//            //console.log(data.length + ' of ' + file.fieldname + ' arrived')
+//        },
+//        onFileUploadComplete: function (file, req, res) {
+//            console.log(file.fieldname + ' uploaded to  ' + file.path + ' used: ' +  processMonitor.get('heapUsed')/1024/1024 + ' MB memory');
+//            //fs.unlink('./' + file.path, function () {
+//            //    console.log(file.fieldname + ' unlinked from ' + file.path + ' used: ' + processMonitor.get('heapUsed') / 1024 / 1024 + ' MB memory');
+//            //});
+//        },
+//        onParseStart: function () {
+//            console.log('Form parsing started at: ', new Date())
+//        },
+//        onParseEnd: function (req, next) {
+//            console.log('Form parsing completed at: ', new Date());
+//            next();
+//        }
+//    }
+//));
 
 app.use('/users', users);
 app.use('/uploads', uploads);
