@@ -98,6 +98,8 @@ angular.module('uploadApp', ['angularFileUpload', 'ui.bootstrap', 'ngRoute'])
 
         socket.on('free memory', function (msg) {
             while ($scope.processStats.length >= $scope.processStatsLimit) {
+                if ($scope.processStatsLimit < 1)
+                    $scope.processStatsLimit = 1;
                 $scope.processStats.shift();
             }
             $scope.processStats.push({x: Date.now(), y: msg[0] / (1024 * 1024)});
@@ -134,28 +136,28 @@ angular.module('uploadApp', ['angularFileUpload', 'ui.bootstrap', 'ngRoute'])
 
                         d3.select('#chart' + index + ' svg')   //Select the <svg> element you want to render the chart in.
                             .datum(
-                                [
-                                    {
-                                        values: result.monitorStat.map(function(stat) {
-                                            return {
-                                                x: stat.date,
-                                                y: stat.heap/ (1024 * 1024)
-                                            }
-                                        }),      //values - represents the array of {x,y} data points
-                                        key: 'Heap Usage (MB)', //key  - the name of the series.
-                                        color: '#ff7f0e'  //color - optional: choose your own line color.
-                                    },
-                                    {
-                                        values: result.monitorStat.map(function(stat) {
-                                            return {
-                                                x: stat.date,
-                                                y: stat.totalHeap/ (1024 * 1024)
-                                            }
-                                        }),      //values - represents the array of {x,y} data points
-                                        key: 'Total Heap (MB)', //key  - the name of the series.
-                                        color: '#575757'  //color - optional: choose your own line color.
-                                    }
-                                ])         //Populate the <svg> element with chart data...
+                            [
+                                {
+                                    values: result.monitorStat.map(function (stat) {
+                                        return {
+                                            x: stat.date,
+                                            y: stat.heap / (1024 * 1024)
+                                        }
+                                    }),      //values - represents the array of {x,y} data points
+                                    key: 'Heap Usage (MB)', //key  - the name of the series.
+                                    color: '#ff7f0e'  //color - optional: choose your own line color.
+                                },
+                                {
+                                    values: result.monitorStat.map(function (stat) {
+                                        return {
+                                            x: stat.date,
+                                            y: stat.totalHeap / (1024 * 1024)
+                                        }
+                                    }),      //values - represents the array of {x,y} data points
+                                    key: 'Total Heap (MB)', //key  - the name of the series.
+                                    color: '#575757'  //color - optional: choose your own line color.
+                                }
+                            ])         //Populate the <svg> element with chart data...
                             .call(processGraph);          //Finally, render the chart!
 
 
