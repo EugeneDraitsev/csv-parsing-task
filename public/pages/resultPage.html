@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+
+<body>
+<div class="container">
+    <div class="row result-block" ng-repeat="result in results" ng-show="results">
+        <div class="col-md-6">
+            <b>File: </b> {{result.filename}} start upload at {{result.begin | date:'MMM dd, yyyy HH:mm:ss'}}, end upload
+            at
+            {{result.end | date:'MMM dd, yyyy HH:mm:ss'}}
+            <p><b>Total:  </b>({{result.end - result.begin}} ms)</p>
+            <table class="table table-bordered">
+                <tr>
+                    <th>Name</th>
+                    <th>Not Null Values</th>
+                    <th>Unique Values</th>
+                    <th>Type</th>
+                </tr>
+                <tr ng-repeat="column in result.columns">
+                    <td>{{column.name}}</td>
+                    <td>{{column.notNull*100|number:2 }}%</td>
+                    <td>{{column.unique}}</td>
+                    <td>{{column.type}}</td>
+                </tr>
+            </table>
+            Common File Info: {{result.columns.length}} Columns, {{result.rows}} Rows
+        </div>
+        <div class="col-md-6 svg-container">
+            <div id="chart{{$index}}" class="chart">
+                <svg class="svg"></svg>
+            </div>
+
+        </div>
+    </div>
+    <div ng-show="!results || results.length === 0">
+        <h2>Don't have any results yet!</h2>
+    </div>
+</div>
+</body>
+</html>

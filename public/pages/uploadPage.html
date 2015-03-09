@@ -1,0 +1,142 @@
+﻿<!DOCTYPE html>
+<html id="ng-app" ng-app="uploadApp"> <!-- id="ng-app" IE<8 -->
+
+<head>
+    <title>Uploads Page</title>
+</head>
+
+
+<body ng-controller="UploadController" nv-file-drop="" uploader="uploader">
+<div class="container">
+    <div class="row">
+
+        <div class="col-md-3">
+            <h3>Select files</h3>
+            <input type="file" nv-file-select="" uploader="uploader" multiple/><br/>
+        </div>
+
+        <div class="col-md-9">
+            <h2>CSV Upload page</h2>
+
+            <h3>The queue</h3>
+
+            <p>Queue length: {{ uploader.queue.length }}</p>
+
+            <table class="table">
+                <thead>
+                <tr>
+                    <th>Name</th>
+                    <th ng-show="uploader.isHTML5">Size</th>
+                    <th ng-show="uploader.isHTML5">Progress</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+                </thead>
+                <tbody ng-repeat="item in uploader.queue">
+                <tr>
+                    <td>
+                        <strong>{{ item.file.name }}</strong>
+                    </td>
+                    <td ng-show="uploader.isHTML5" nowrap>{{ item.file.size/1024/1024|number:2 }} MB</td>
+                    <td ng-show="uploader.isHTML5">
+                        <div class="progress" style="margin-bottom: 0;">
+                            <div class="progress-bar" role="progressbar"
+                                 ng-style="{ 'width': item.progress + '%' }"></div>
+                        </div>
+                    </td>
+                    <td class="text-center">
+                        <span ng-show="item.isSuccess"><i class="glyphicon glyphicon-ok"></i></span>
+                        <span ng-show="item.isCancel"><i class="glyphicon glyphicon-ban-circle"></i></span>
+                        <span ng-show="item.isError"><i class="glyphicon glyphicon-remove"></i> Server Error (Make sure, that csv file is valid)</span>
+                    </td>
+                    <td nowrap>
+                        <button type="button" class="btn btn-success btn-xs" ng-click="item.upload()"
+                                ng-disabled="item.isReady || item.isUploading || item.isSuccess">
+                            <span class="glyphicon glyphicon-upload"></span> Upload
+                        </button>
+                        <button type="button" class="btn btn-warning btn-xs" ng-click="item.cancel()"
+                                ng-disabled="!item.isUploading">
+                            <span class="glyphicon glyphicon-ban-circle"></span> Cancel
+                        </button>
+                        <button type="button" class="btn btn-danger btn-xs" ng-click="item.remove()">
+                            <span class="glyphicon glyphicon-trash"></span> Remove
+                        </button>
+                        <button type="button" class="btn btn-primary btn-xs"  data-toggle="modal" data-target="#myModal" ng-show="item.result" ng-click="setModalData(item)">
+                            <span class="glyphicon glyphicons-circle-ok"></span> Show Result
+                        </button>
+                    </td>
+                </tr>
+                <tr ng-show="item.result">
+                    {{item.result}}
+
+                </tr>
+                </tbody>
+            </table>
+
+            <div>
+                <div>
+                    Queue progress:
+                    <div class="progress" style="">
+                        <div class="progress-bar" role="progressbar"
+                             ng-style="{ 'width': uploader.progress + '%' }"></div>
+                    </div>
+                </div>
+                <button type="button" class="btn btn-success btn-s" ng-click="uploader.uploadAll()"
+                        ng-disabled="!uploader.getNotUploadedItems().length">
+                    <span class="glyphicon glyphicon-upload"></span> Upload all
+                </button>
+                <button type="button" class="btn btn-warning btn-s" ng-click="uploader.cancelAll()"
+                        ng-disabled="!uploader.isUploading">
+                    <span class="glyphicon glyphicon-ban-circle"></span> Cancel all
+                </button>
+                <button type="button" class="btn btn-danger btn-s" ng-click="uploader.clearQueue()"
+                        ng-disabled="!uploader.queue.length">
+                    <span class="glyphicon glyphicon-trash"></span> Remove all
+                </button>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- Modal -->
+    <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title" id="myModalLabel">Parse Result for {{modalName}}</h4>
+                </div>
+                <div class="modal-body">
+                    <b>File: </b> {{modalData.filename}} start upload at {{modalData.begin | date:'MMM dd, yyyy HH:mm:ss'}}, end upload at
+                    {{modalData.end | date:'MMM dd, yyyy HH:mm:ss'}}
+                    <p><b>Total: </b> ({{modalData.end - modalData.begin}} ms)</p>
+                    <table ng-show="modalData" class="table table-bordered" style="width: 100%">
+                        <tr>
+                            <th>Name</th>
+                            <th>Not Null Values</th>
+                            <th>Unique Values</th>
+                            <th>Type</th>
+                        </tr>
+                        <tr ng-repeat="column in modalData.columns">
+                            <td>{{column.name}}</td>
+                            <td>{{column.notNull*100|number:2 }}%</td>
+                            <td>{{column.unique}}</td>
+                            <td>{{column.type}}</td>
+                        </tr>
+                    </table>
+                    Common File Info: {{modalData.columns.length}} Columns, {{modalData.rows}} Rows
+
+                    <h4>Sorry, but graphs only on result page</h4>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
+                 </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+</body>

@@ -1,31 +1,75 @@
 var express = require('express');
 var router = express.Router();
-var util = require("util");
 var parse = require('csv-parse');
-var multer = require('multer');
 var fs = require("fs");
+var stream = require('stream');
+var Monitor = require('monitor').start();
+var processMonitor = new Monitor({probeClass: 'Process'});
+processMonitor.connect();
+var results = [];
 
-router.post("/", [multer({dest: './uploads'}), parseFile]);
 
-function parseCSVFile(sourceFilePath, columns, onNewRecord, handleError, done) {
-    var source = fs.createReadStream(sourceFilePath),
-        result = {};
+router.post("/", function (req, res) {
+    req.setTimeout(600000);
+    req.pipe(req.busboy);
+    req.busboy.on('file', function (fieldname, file, filename) {
+        var readable = file;
+        function onDone(result) {
+            results.unshift(result);
+            res.send(result);
+        }
+
+        function onError(error) {
+            res.writeHead(502, {Connection: 'close', Location: '/'});
+            res.end();
+        }
+
+        readable.on('data', function (chunk) {
+            readable.pause();
+            setTimeout(function() {
+                readable.resume();
+            }, 50);
+        });
+
+        parseCSVFile(file, filename, onDone, onError);
+    });
+
+});
+
+router.get('/', function (req, res) {
+    res.send(results);
+});
+
+function parseCSVFile(stream, filename, onDone, onError) {
+    var source = stream,
+        result = {filename: filename, begin: Date.now(), monitorStat: []};
+
+    pushMonitorStat(result.monitorStat, result.begin);
 
     var parser = parse({
         delimiter: ',',
-        columns: columns
+        columns: true
     });
 
     parser.on("readable", function () {
         var record;
-        if (parser.lines === 1) {
+        if (parser.lines > 0 && !result.columns) {
             result.columns = [];
-            parser.options.columns.forEach(function (column) {
-                result.columns.push({name: column, unique: [], notNull: 0, type: 'type'});
+            parser.options.columns.forEach(function (column, index) {
+                result.columns.push({
+                    name: column,
+                    unique: [],
+                    notNull: 0,
+                    type: checkType(parser.line[index])
+                });
             });
         }
 
-        while (record = parser.read()) {
+        if (parser.lines % 1000 === 0) {
+            pushMonitorStat(result.monitorStat);
+        }
+
+        if (record = parser.read()) {
             result.columns.forEach(function (column, index) {
                 var column = record[column.name];
                 if (column && column !== "") {
@@ -35,13 +79,14 @@ function parseCSVFile(sourceFilePath, columns, onNewRecord, handleError, done) {
                 if (result.columns[index].unique.indexOf(column) == -1) {
                     result.columns[index].unique.push(column);
                 }
-            });
-            onNewRecord(record);
+            })
         }
+
     });
 
     parser.on("error", function (error) {
-        handleError(error)
+        parser.end();
+        onError(error);
     });
 
     parser.on("end", function () {
@@ -50,58 +95,71 @@ function parseCSVFile(sourceFilePath, columns, onNewRecord, handleError, done) {
             column.unique = column.unique.length;
             column.notNull = column.notNull / result.rows;
         });
-        done(result);
+        result.end = Date.now();
+        pushMonitorStat(result.monitorStat, result.end);
+        result.monitorStat = finalizeStat(result.monitorStat);
+        onDone(result);
     });
 
     source.pipe(parser);
 }
 
-//We will call this once Multer's middleware processed the request
-//and stored file in req.files.fileFormFieldName
+function checkType(value) {
+    //select integers only
+    var intRegex = /[0-9 -()+]+$/;
+    //match ints and floats/decimals
+    var floatRegex = /[-+]?(\d*[.])?\d+/;
+    //match any ip address
+    var ipRegex = /\b(?:(?:25[0-5]|2[0-4]\d|[01]?\d{1,2})\.){3}(?:25[0-5]|2[0-4]\d|[01]?\d{1,2})\b/;
+    //match date in format MM/DD/YYYY
+    var dateMMDDYYYRegex = /^(?:(?:31(\/|-|\.)(?:0?[13578]|1[02]))\1|(?:(?:29|30)(\/|-|\.)(?:0?[1,3-9]|1[0-2])\2))(?:(?:1[6-9]|[2-9]\d)?\d{2})$|^(?:29(\/|-|\.)0?2\3(?:(?:(?:1[6-9]|[2-9]\d)?(?:0[48]|[2468][048]|[13579][26])|(?:(?:16|[2468][048]|[3579][26])00))))$|^(?:0?[1-9]|1\d|2[0-8])(\/|-|\.)(?:(?:0?[1-9])|(?:1[0-2]))\4(?:(?:1[6-9]|[2-9]\d)?\d{2})$/;
+    //match email address
+    var emailRegex = /\w+([-+.']\w+)*@\w+([-.]\w+)*\.\w+([-.]\w+)*/;
 
-function parseFile(req, res, next) {
-    req.setTimeout(600000);
-    var filePath = req.files.file.path;
-    console.log(filePath);
-
-    function onNewRecord(record) {
-        //console.log(record)
+    if (dateMMDDYYYRegex.test(value)) {
+        return 'date';
+    }
+    if (ipRegex.test(value)) {
+        return 'ip';
     }
 
-    function onError(error) {
-        console.log(error)
+    if (emailRegex.test(value)) {
+        return 'email';
     }
-
-    function done(result) {
-        res.send(result);
-        console.log(result);
+    if (intRegex.test(value)) {
+        return 'integer';
     }
-
-    var columns = true;
-    parseCSVFile(filePath, columns, onNewRecord, onError, done);
-
+    if (floatRegex.test(value)) {
+        return 'floatRegex';
+    }
+    return 'string';
 }
 
-//function(req, res, next){
-//    if (req.files) {
-//        console.log(util.inspect(req.files));
-//        if (req.files.file.size === 0) {
-//            return next(new Error("Hey, first would you select a file?"));
-//        }
-//        //fs.exists(req.files.file.path, function(exists) {
-//        //    if(exists) {
-//        //        res.send('File uploaded to: ' + req.files.file.path + ' - ' + req.files.file.size + ' bytes');
-//        //        res.end("Got your file!");
-//        //    } else {
-//        //        res.end("Well, there is no magic for those who don’t believe in it!");
-//        //    }
-//        //});
-//
-//        console.log('imma let you finish but blocking the event loop is the best bug of all TIME')
-//        res.send('File uploaded to: ' + req.files.file.path + ' - ' + req.files.file.size + ' bytes');
-//        res.end("Got your file!");
-//        console.log(req.files.file.size);
-//    }
-//}
+
+function pushMonitorStat(stat, date) {
+    stat.push(
+        {
+            date: date ? date : Date.now(),
+            heap: processMonitor.get('heapUsed'),
+            totalHeap: processMonitor.get('heapTotal')
+        });
+    if (stat.length > 5000) {
+        stat.shift();
+    }
+}
+
+function finalizeStat (stats) {
+    if (stats.length > 100) {
+        var slicer = Math.round(stats.length/100) + 1,
+            temp = [];
+        stats.forEach(function (item, index) {
+            if (index % slicer == 0) {
+                temp.push(item);
+            }
+        });
+        stats = temp;
+    }
+    return stats;
+}
 
 module.exports = router;

@@ -10,23 +10,9 @@ var io = require('socket.io').listen(server = app.listen(app.get('port'), functi
   debug('Express server listening on port ' + server.address().port);
 }));
 
-io.sockets.on('connection', function (socket) {
-  socket.emit('message', { message: 'welcome to the chat' });
-  socket.on('send', function (data) {
-    io.sockets.emit('message', data);
-  });
-});
-
-io.on('connection', function(socket){
-  socket.on('chat message', function(msg){
-    console.log('message: ' + msg);
-    io.emit('chat message', msg);
-  });
-});
-
 var processMonitor = new Monitor({probeClass: 'Process'});
 processMonitor.connect();
 processMonitor.on('change', function () {
-  io.emit('free memory', processMonitor.get('heapUsed'));
+  io.emit('free memory', [processMonitor.get('heapUsed'), processMonitor.get('heapTotal')]);
 });
 

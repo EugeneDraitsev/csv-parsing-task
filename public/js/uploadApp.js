@@ -1,56 +1,176 @@
-angular.module('uploadApp', ['angularFileUpload'])
-    .controller('UploadController', ['$scope', 'FileUploader', function ($scope, FileUploader) {
+angular.module('uploadApp', ['angularFileUpload', 'ui.bootstrap', 'ngRoute'])
+    .config(function ($routeProvider) {
+        $routeProvider
+            .when('/', {
+                templateUrl: 'pages/uploadPage.html',
+                controller: 'UploadController'
+            })
+            .when('/serverState', {
+                templateUrl: 'pages/serverStatePage.html',
+                controller: 'ServerStateController'
+            })
+            .when('/result', {
+                templateUrl: 'pages/resultPage.html',
+                controller: 'ResultController'
+            })
+            .when('/config', {
+                templateUrl: 'pages/configPage.html'
+            })
+    })
+    .controller('UploadController', ['$scope', 'FileUploader', '$modal', function ($scope, FileUploader, $modal) {
         var uploader = $scope.uploader = new FileUploader({
-            url: '/uploads'
+            url: '/uploads/'
         });
 
-        // FILTERS
-
-        //uploader.filters.push({
-        //    name: 'imageFilter',
-        //    fn: function (item /*{File|FileLikeObject}*/, options) {
-        //        var type = '|' + item.type.slice(item.type.lastIndexOf('/') + 1) + '|';
-        //        return '|jpg|png|jpeg|bmp|gif|'.indexOf(type) !== -1;
-        //    }
-        //});
-
-        // CALLBACKS
-
-        uploader.onWhenAddingFileFailed = function (item /*{File|FileLikeObject}*/, filter, options) {
-            console.info('onWhenAddingFileFailed', item, filter, options);
-        };
-        uploader.onAfterAddingFile = function (fileItem) {
-            console.info('onAfterAddingFile', fileItem);
-        };
-        uploader.onAfterAddingAll = function (addedFileItems) {
-            console.info('onAfterAddingAll', addedFileItems);
-        };
-        uploader.onBeforeUploadItem = function (item) {
-            console.info('onBeforeUploadItem', item);
-        };
-        uploader.onProgressItem = function (fileItem, progress) {
-            console.info('onProgressItem', fileItem, progress);
-        };
-        uploader.onProgressAll = function (progress) {
-            console.info('onProgressAll', progress);
-        };
-        uploader.onSuccessItem = function (fileItem, response, status, headers) {
-            console.info('onSuccessItem', fileItem, response, status, headers);
-        };
         uploader.onErrorItem = function (fileItem, response, status, headers) {
-            console.info('onErrorItem', fileItem, response, status, headers);
-        };
-        uploader.onCancelItem = function (fileItem, response, status, headers) {
-            console.info('onCancelItem', fileItem, response, status, headers);
-        };
-        uploader.onCompleteItem = function (fileItem, response, status, headers) {
-            console.info('onCompleteItem', fileItem, response, status, headers);
-        };
-        uploader.onCompleteAll = function () {
-            console.info('onCompleteAll');
+            //console.info(response, status, headers);
         };
 
-        console.info('uploader', uploader);
+        $scope.uploader.onSuccessItem = function (fileItem, response, status, headers, uploader) {
+            fileItem.result = response;
+            console.log($scope.uploader);
+            console.log(uploader);
+        };
+
+        $scope.setModalData = function (item) {
+            $scope.modalName = item.file.name;
+            $scope.modalData = item.result;
+        }
+
+        $scope.closeAlert = function () {
+            $('#alert').remove();
+        }
+    }])
+    .controller('ServerStateController', ['$scope', function ($scope) {
+        var processGraph,
+            socket = io();
+
+        $scope.processStats = [];
+        $scope.processStatsLimit = 20;
+        $scope.clearData = function () {
+            $scope.processStats = [];
+        }
+
+        nv.addGraph(function () {
+            processGraph = nv.models.lineChart()
+                .margin({left: 100})  //Adjust chart margins to give the x-axis some breathing room.
+                .useInteractiveGuideline(true)  //We want nice looking tooltips and a guideline!
+                .transitionDuration(350)  //how fast do you want the lines to transition?
+                .showLegend(true)       //Show the legend, allowing users to turn on/off line series.
+                .showYAxis(true)        //Show the y-axis
+                .showXAxis(true)        //Show the x-axis
+            ;
+
+            processGraph.xAxis     //Chart x-axis settings
+                .axisLabel('Time (ms)')
+                .tickFormat(function (d) {
+                    return d3.time.format('%X')(new Date(d));
+                });
+
+            processGraph.yAxis     //Chart y-axis settings
+                .axisLabel('Heap Memory Usage (MB)')
+                .tickFormat(d3.format('.02f'));
+
+            nv.utils.windowResize(function () {
+                processGraph.update()
+            });
+
+
+            processGraph.redraw = function (data) {
+                d3.select('#chart svg')
+                    .datum(
+                    [
+                        {
+                            values: data,      //values - represents the array of {x,y} data points
+                            key: 'Heap Usage (MB)', //key  - the name of the series.
+                            color: '#ff7f0e'  //color - optional: choose your own line color.
+                        }
+                    ]
+                )
+                    .transition().duration(500)
+                    .call(processGraph);
+            }
+
+
+            return processGraph;
+        });
+
+
+        socket.on('free memory', function (msg) {
+            while ($scope.processStats.length >= $scope.processStatsLimit) {
+                $scope.processStats.shift();
+            }
+            $scope.processStats.push({x: Date.now(), y: msg[0] / (1024 * 1024)});
+            processGraph.redraw($scope.processStats);
+        });
+
+    }])
+    .controller('ResultController', ['$scope', '$http', function ($scope, $http) {
+        $scope.results = [];
+
+        $http.get('/uploads').success(function (data, status, headers, config) {
+            $scope.results = data;
+
+            $scope.results.forEach(function (result, index) {
+                    nv.addGraph(function () {
+                        var processGraph = nv.models.lineChart()
+                                .margin({left: 100})  //Adjust chart margins to give the x-axis some breathing room.
+                                .useInteractiveGuideline(true)  //We want nice looking tooltips and a guideline!
+                                .transitionDuration(350)  //how fast do you want the lines to transition?
+                                .showLegend(true)       //Show the legend, allowing users to turn on/off line series.
+                                .showYAxis(true)        //Show the y-axis
+                                .showXAxis(true)        //Show the x-axis
+                            ;
+
+                        processGraph.xAxis     //Chart x-axis settings
+                            .axisLabel('Time (ms)')
+                            .tickFormat(function (d) {
+                                return d3.time.format('%X')(new Date(d));
+                            });
+
+                        processGraph.yAxis     //Chart y-axis settings
+                            .axisLabel('Heap Memory Usage (MB)')
+                            .tickFormat(d3.format('.02f'));
+
+                        d3.select('#chart' + index + ' svg')   //Select the <svg> element you want to render the chart in.
+                            .datum(
+                                [
+                                    {
+                                        values: result.monitorStat.map(function(stat) {
+                                            return {
+                                                x: stat.date,
+                                                y: stat.heap/ (1024 * 1024)
+                                            }
+                                        }),      //values - represents the array of {x,y} data points
+                                        key: 'Heap Usage (MB)', //key  - the name of the series.
+                                        color: '#ff7f0e'  //color - optional: choose your own line color.
+                                    },
+                                    {
+                                        values: result.monitorStat.map(function(stat) {
+                                            return {
+                                                x: stat.date,
+                                                y: stat.totalHeap/ (1024 * 1024)
+                                            }
+                                        }),      //values - represents the array of {x,y} data points
+                                        key: 'Total Heap (MB)', //key  - the name of the series.
+                                        color: '#575757'  //color - optional: choose your own line color.
+                                    }
+                                ])         //Populate the <svg> element with chart data...
+                            .call(processGraph);          //Finally, render the chart!
+
+
+                        nv.utils.windowResize(function () {
+                            processGraph.update()
+                        });
+
+                        return processGraph;
+                    });
+                }
+            )
+
+        });
+
+
     }])
     .directive('ngThumb', ['$window', function ($window) {
         var helper = {
@@ -96,3 +216,4 @@ angular.module('uploadApp', ['angularFileUpload'])
             }
         };
     }]);
+

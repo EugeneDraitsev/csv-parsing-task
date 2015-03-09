@@ -1,0 +1,25 @@
+﻿<!DOCTYPE html>
+
+<body>
+<div class="container">
+    <div class="row">
+        <div class="col-md-12">
+            <h2>Simple Server Heap Statistic</h2>
+
+            <div id="chart" style="height: 400px;">
+                <svg class="svg"></svg>
+            </div>
+        </div>
+        <div class="col-md-12">
+            <form class="form-inline">
+                <div class="form-group">
+                    Tick Limits
+                    <input type="text" class="" ng-model="processStatsLimit" min="0" max="200">
+                </div>
+                <button type="submit" class="btn btn-default" ng-click="clearData()">Clear Data</button>
+            </form>
+        </div>
+    </div>
+</div>
+</body>
+</html>

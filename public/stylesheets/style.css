@@ -6,44 +6,39 @@ a {
     color: #00B7FF;
 }
 
-/** {*/
-    /*margin: 0;*/
-    /*padding: 0;*/
-    /*box-sizing: border-box;*/
-/*}*/
+.my-drop-zone {
+    border: dotted 3px lightgray;
+}
 
-/*form {*/
-    /*background: #000;*/
-    /*padding: 3px;*/
-    /*position: fixed;*/
-    /*bottom: 0;*/
-    /*width: 100%;*/
-/*}*/
+.nv-file-over {
+    border: dotted 3px red;
+}
 
-/*form input {*/
-    /*border: 0;*/
-    /*padding: 10px;*/
-    /*width: 90%;*/
-    /*margin-right: .5%;*/
-/*}*/
+/* Default class applied to drop zones on over */
+.another-file-over-class {
+    border: dotted 3px green;
+}
 
-/*form button {*/
-    /*width: 9%;*/
-    /*background: rgb(130, 224, 255);*/
-    /*border: none;*/
-    /*padding: 10px;*/
-/*}*/
+html, body {
+    height: 100%;
+}
 
-/*#messages {*/
-    /*list-style-type: none;*/
-    /*margin: 0;*/
-    /*padding: 0;*/
-/*}*/
+.result-block {
+    margin-bottom: 20px;
+    border: 1px solid #0480be;
+    box-shadow: 0 0 10px rgba(0,0,0,0.5);
+    padding: 20px 0;
+}
 
-/*#messages li {*/
-    /*padding: 5px 10px;*/
-/*}*/
+.svg-container {
+    padding-top: 25%;
+}
 
-/*#messages li:nth-child(odd) {*/
-    /*background: #eee;*/
-/*}*/
+.svg {
+    overflow: visible !important;
+}
+
+.chart {
+    height: 400px;
+    margin-top: -100px;
+}
