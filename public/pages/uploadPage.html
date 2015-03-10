@@ -6,7 +6,7 @@
 </head>
 
 
-<body ng-controller="UploadController" nv-file-drop="" uploader="uploader">
+<!--<body ng-controller="UploadController" nv-file-drop="" uploader="uploader">-->
 <div class="container">
     <div class="row">
 
@@ -61,7 +61,7 @@
                         <button type="button" class="btn btn-danger btn-xs" ng-click="item.remove()">
                             <span class="glyphicon glyphicon-trash"></span> Remove
                         </button>
-                        <button type="button" class="btn btn-primary btn-xs"  data-toggle="modal" data-target="#myModal" ng-show="item.result" ng-click="setModalData(item)">
+                        <button type="button" class="btn btn-primary btn-xs"  data-toggle="modal" data-target="#myModal" ng-show="item.result" ng-click="setModalData(item.result)">
                             <span class="glyphicon glyphicons-circle-ok"></span> Show Result
                         </button>
                     </td>
@@ -102,11 +102,11 @@
 
     <!-- Modal -->
     <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
+        <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
                     <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-                    <h4 class="modal-title" id="myModalLabel">Parse Result for {{modalName}}</h4>
+                    <h4 class="modal-title" id="myModalLabel">Parse Result</h4>
                 </div>
                 <div class="modal-body">
                     <b>File: </b> {{modalData.filename}} start upload at {{modalData.begin | date:'MMM dd, yyyy HH:mm:ss'}}, end upload at
@@ -127,8 +127,9 @@
                         </tr>
                     </table>
                     Common File Info: {{modalData.columns.length}} Columns, {{modalData.rows}} Rows
-
-                    <h4>Sorry, but graphs only on result page</h4>
+                    <div id="chart" class="chart">
+                        <svg class="svg"></svg>
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
