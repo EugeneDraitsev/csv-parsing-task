@@ -19,14 +19,11 @@ a {
     border: dotted 3px green;
 }
 
-html, body {
-    height: 100%;
-}
 
 .result-block {
     margin-bottom: 20px;
     border: 1px solid #0480be;
-    box-shadow: 0 0 10px rgba(0,0,0,0.5);
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
     padding: 20px 0;
 }
 
@@ -39,4 +36,8 @@ html, body {
 
 .chart {
     height: 400px;
+}
+
+body {
+    padding-top: 70px;
 }
